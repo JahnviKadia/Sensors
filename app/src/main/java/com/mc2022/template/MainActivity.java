@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     TextView magField_X, magField_Y, magField_Z, magFieldTxt;
 
     ToggleButton lightBtn, linearaccBtn, gyroBtn, proBtn, tempBtn, magFieldBtn, accBtn, flipBtn, toogleButton;
-    Button btn1, btn2, latlogBtn;
+    Button btn1, btn2, latlogBtn, btn3;
     private static final String TAG = "MainActivity";
     private SensorManager sensorManager;
     private LocationManager locationManager;
@@ -65,8 +65,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     List<Float> l2 = new ArrayList<>();
 
     public float motionlast= 0.0F;
-    public List<Float> list1 = new ArrayList<>();
-    public ArrayList<ArrayList<Float>> list2 = new ArrayList<>();
+
+
 
     // gps add a place
     private String address = "";
@@ -76,9 +76,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private String pincode = "";
     private String Completeaddress = "";
 
+    public ArrayList<List<Double>> list2 = new ArrayList<>();
+    double dist_calc;
+    double latitude, longitude;
+
     // upward & downward
-    private Float f1, f2, f3, f4, f5, f6;
+    private Float f1, f2, f3;
     private Float lightData;
+
+    //
+    float f4;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -124,6 +132,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //button
         btn1 = findViewById(R.id.btn1);
         btn2 = findViewById(R.id.btn2);
+        btn3 = findViewById(R.id.btn3);
 
         // gps
         lat = findViewById(R.id.lat);
@@ -162,6 +171,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        btn3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick (View view) {
+                Intent i = new Intent(MainActivity.this, LocationActivity.class);
+                i.putExtra("location", (Serializable) list2);
+                startActivity(i);
+            }
+        });
+
         // gps
         latlogBtn.setOnClickListener(new View.OnClickListener() {
             class MyLocationListener implements LocationListener {
@@ -185,6 +203,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         state = addresses.get(0).getAdminArea();
                         country = addresses.get(0).getCountryName();
                         pincode = addresses.get(0).getPostalCode();
+
+
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -483,15 +503,38 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         List<gpsModel> myEntries = myDb7.getDao7().getAllData7();
 
         String output = "";
-        System.out.println("Magnetic Field SENSOR TABLE");
+        System.out.println("GPS SENSOR TABLE");
         System.out.println("ID" + " " + "ADDRESS"+ " " + "CITY_NAME" + "\n");
         for(gpsModel m : myEntries)
         {
             output += ( m.getId() + " " +m.getAddress() + " " +m.getName()+ " "+ m.getLat()+ " "+ m.getLog() +"\n");
+            double a = Double.parseDouble(m.getLat());
+            double b = Double.parseDouble(m.getLog());
+            List<Double> list1 = new ArrayList<>();
+            list1.clear();
+            list1.add(Double.valueOf(m.getId()));
+            dist_calc = calculate_distance(latitude, longitude, a, b);
+            list1.add(dist_calc);
+            list2.add(list1);
 
         }
 
         Log.i("My Output : ",output);
+    }
+
+    private double calculate_distance (double latitude, double longitude, double lat, double log) {
+        int radius = 6371;
+        double dlat = deg2rad(lat - latitude);
+        double dlog = deg2rad(log - longitude);
+        double d1 = Math.sin(dlat/2) * Math.sin(deg2rad(dlat/2)) +  Math.cos(latitude) * Math.cos(deg2rad(lat)) *
+                Math.sin(dlog/2) * Math.sin(deg2rad(dlog/2));
+        double d2 = (2 *  Math.atan2(Math.sqrt(d1), Math.sqrt(1 - d1))) * radius;
+        return d2;
+    }
+
+    private  double deg2rad(double val){
+        double res = val * (Math.PI/180);
+        return res;
     }
 
     @SuppressLint("SetTextI18n")
@@ -530,6 +573,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Log.d(TAG, "Proximity" + sensorEvent.values[0]);
             provalTxt.setText(Float.toString(sensorEvent.values[0]));
             protimeTxt.setText(Float.toString(sensorEvent.timestamp));
+            f4 = sensorEvent.values[0];
+            upwardMobile2();
             AddProximityData();
         }
 
@@ -579,6 +624,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
 
 
+        }
+    }
+
+    private void upwardMobile2 ( ) {
+        if(f4 == 0.0){
+            Stop(1);
+            Stop(2);
+            Stop(3);
+            Stop(5);
+            Stop(6);
+        }
+
+        else{
+            magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            temp = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+            gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            linear_acc = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+            light = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+
+            if(magField != null || temp != null || pro != null || gyro != null || linear_acc != null || light != null){
+                sensorManager.registerListener(MainActivity.this, magField, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, temp, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, gyro, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, light, SensorManager.SENSOR_DELAY_NORMAL);
+            }
         }
     }
 
@@ -823,7 +894,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if( lightData < 10  && lightData > 0){
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
-            magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+          /*  magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
             temp = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
             pro = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
             gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
@@ -837,10 +908,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 sensorManager.registerListener(MainActivity.this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
             }
 
-
-        }
-        else{
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+           */
 
             Stop(6);
             Stop(5);
@@ -849,10 +917,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Stop(2);
 
         }
+        else{
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
+
+          /*  magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            temp = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+            pro = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+            gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            linear_acc = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+
+            if(magField != null || temp != null || pro != null || gyro != null || linear_acc != null){
+                sensorManager.registerListener(MainActivity.this, magField, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, temp, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, pro, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, gyro, SensorManager.SENSOR_DELAY_NORMAL);
+                sensorManager.registerListener(MainActivity.this, linear_acc, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+
+           */
+
+           /* Stop(6);
+            Stop(5);
+            Stop(4);
+            Stop(3);
+            Stop(2);
+
+            */
+
+        }
     }
 
     private void upwardMobile ( ) {
-       if(f2 >= 9.0 && f2 <= 10.0){
+       if(f3 >= 9.0 && f3 <= 10.0){
            //Log.i("U&D", "Mobile is in upward direction");
 
            magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -873,7 +970,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
        }
 
-       else if(f2 <= -9.0 && f2 >= -10.0){
+       else if(f3 <= -9.0 && f3 >= -10.0){
            //Log.i("U&D", "Mobile is in downward direction");
            Stop(6);
            Stop(5);
