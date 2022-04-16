@@ -345,6 +345,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 else{
                     Stop(4);
+                    Stop(1);
+                    Stop(6);
+                    Stop(5);
+                    Stop(4);
+                    Stop(3);
+                    Stop(2);
                     provalTxt.setText("0");
                     protimeTxt.setText("0");
                     Toast.makeText(MainActivity.this, "Proximity sensor stopped", Toast.LENGTH_SHORT).show();
@@ -891,7 +897,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     private void switchModeOn ( ) {
-        if( lightData < 10  && lightData > 0){
+        if( lightData < 2  && lightData > 0){
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
           /*  magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
